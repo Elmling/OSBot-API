@@ -1,0 +1,177 @@
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.model.Item;
+import org.osbot.rs07.api.model.Player;
+import org.osbot.rs07.api.model.RS2Object;
+import org.osbot.rs07.api.ui.EquipmentSlot;
+import org.osbot.rs07.api.ui.RS2Widget;
+import org.osbot.rs07.api.ui.Spells;
+import org.osbot.rs07.api.ui.Tab;
+import org.osbot.rs07.script.Script;
+import org.osbot.rs07.script.ScriptManifest;
+
+@ScriptManifest(name = "AIOFighter", author = "Marc", version = 1.0, info = "", logo = "")
+
+public class Main extends Script 
+{
+	String Activity;
+	Fletcher fletcher = new Fletcher(this);
+	Banking banking = new Banking(this);
+	
+	public void onStart() 
+	{
+		fletcher.setFletching("Maple longbow", fletcher.FLETCHBOWSTRING);
+	}
+
+	public void onExit() 
+	{
+
+	}
+
+	public int onLoop() 
+	{
+		String value = fletcher.performFletching();
+		log(value);
+		if(value.equals("Success"))
+		{
+			
+		}
+		else
+		if(value.equals("Animating"))
+		{
+			Activity = "Fletching..";
+			if(random(0,100) < 30)
+				mouse.moveSlightly();
+			if(random(0,100) < 20)
+				mouse.moveRandomly();
+			if(random(0,100) < 25)
+				mouse.moveOutsideScreen();
+			doSleep(2000,500);
+		}
+		else
+		if(value.equals("Missing Unstrung bow"))
+		{
+			Activity = "Missing Unstrung bow";
+			boolean bankOpen = false;
+			if(!bank.isOpen())
+				bankOpen = banking.openClosestBank();
+			else
+				bankOpen = true;
+			if(bankOpen)
+			{
+				if(!inventory.isEmpty())
+					bank.depositAll();
+				doSleep(1000,100);
+				boolean withdraw = fletcher.withdrawUnstrungBow();
+				doSleep(1000,100);
+				if(withdraw)
+				{
+					bank.withdraw("Bow string",14);
+				}
+				doSleep(1000,500);
+				if(!inventory.contains("Bow string") || !withdraw)
+					stop(false);
+				bank.close();
+			}
+		}
+		else
+		if(value.equals("Missing Bow string"))
+		{
+			Activity = "Missing Bow string";
+			boolean bankOpen = banking.openClosestBank();
+			
+			if(bankOpen)
+			{
+				bank.depositAll();
+				doSleep(1000,100);
+				bank.withdraw("Bow string",14);
+				doSleep(1000,100);
+				boolean withdraw = fletcher.withdrawUnstrungBow();
+				if(!withdraw)
+					stop(false);
+				doSleep(1000,100);
+				bank.close();
+			}
+		}
+		else
+		if(value.equals("Missing Knife"))
+		{
+			Activity = "Missing a Knife";
+			boolean bankOpen = banking.openClosestBank();
+			if(bankOpen)
+			{
+				if(bank.withdraw("Knife",1))
+				{
+					
+				}
+				else
+				{
+					log("Couldn't find a knife, terminating script");
+					bank.close();
+					stop(false);
+				}
+				bank.close();
+			}
+		}
+		else
+		if(value.equals("Missing Logs"))
+		{
+			Activity = "Missing logs";
+			boolean bankOpen = banking.openClosestBank();
+			if(bankOpen)
+			{
+				if(inventory.isFull())
+				{
+					List<String> types = fletcher.getAllTypes();
+					for(int i = 0; i < types.size(); i++)
+						bank.depositAll(types.get(i));
+				}
+				if(bank.withdrawAll(fletcher.getFletching()))
+				{
+					
+				}
+				else
+				{
+					log("Couldn't find log type, terminating script");
+					bank.close();
+					stop(false);
+				}
+				bank.close();
+			}
+		}
+		return random(1000,2000);
+	}
+
+	public void doSleep(int ms, int randomizer)
+	{
+		if(randomizer > ms)
+		{
+			try 
+			{
+				sleep(ms);
+			} 
+			catch (InterruptedException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		ms = random(ms - randomizer, ms + randomizer);
+		try 
+		{
+			sleep(ms);
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void onPaint(Graphics2D g) 
+	{
+		g.drawString(Activity,12,316);
+	}
+}
