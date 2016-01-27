@@ -1,0 +1,164 @@
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.model.GroundItem;
+import org.osbot.rs07.api.model.Item;
+import org.osbot.rs07.api.model.NPC;
+import org.osbot.rs07.api.model.Player;
+import org.osbot.rs07.api.model.RS2Object;
+import org.osbot.rs07.api.ui.EquipmentSlot;
+import org.osbot.rs07.api.ui.RS2Widget;
+import org.osbot.rs07.api.ui.Spells;
+import org.osbot.rs07.api.ui.Tab;
+import org.osbot.rs07.script.Script;
+import org.osbot.rs07.script.ScriptManifest;
+
+@ScriptManifest(name = "AIOFighter", author = "Marc", version = 1.0, info = "", logo = "")
+
+public class Main extends Script 
+{
+	WoodCutter woodCutter = new WoodCutter(this);
+	Banking banking = new Banking(this);
+	String Activity;
+
+	private long lastHoverTime;
+
+	private long hoverOverRandomObjectTimeout = 15000;
+	
+	public void onStart() 
+	{
+		woodCutter.TreeListAdd("Maple tree");
+		//woodCutter.TreeListAdd("Oak");
+		//woodCutter.TreeListAdd("Willow");
+		woodCutter.setInventoryMode("Bank");
+	}
+
+	public void onExit() 
+	{
+		
+	}
+
+	public int onLoop() 
+	{
+		int success = woodCutter.ChopClosestTrees();
+		//Already in animation
+		if(success == -1)
+		{
+			if(random(0,100) < 18)
+				mouse.moveRandomly();
+			if(random(0,100) < 35)
+				hoverOverRandomObject();			
+		}
+		else //Failed attempt
+		if(success == 0)
+		{
+			
+		}
+		else //Success
+		if(success == 1)
+		{
+			//If the tree is valid
+			if(woodCutter.getCurrentTreeChopping() != null)
+			{
+				//antiban
+				if(random(0,100) < 18)
+					mouse.moveRandomly();
+				if(random(0,100) < 35)
+					hoverOverRandomObject();
+				
+			}
+			else //
+			{
+				
+			}
+		}
+		if(woodCutter.checkInventory() == true)
+		{
+			if(woodCutter.getInventoryMode().equals("Bank"))
+			{
+				boolean inBank = banking.runToBank(banking.getClosestBank());
+				if(inBank)
+				{
+					NPC banker = npcs.closest("Banker");
+					if(banker != null)
+					{
+						banker.interact("Bank");
+						doSleep(3000,500);
+						bank.depositAll("Logs","Oak logs","Willow logs","Yew logs","Maple logs","Magic logs");
+						bank.close();
+					}
+				}
+			}
+			else
+				inventory.dropAll("Logs","Oak logs","Willow logs","Yew logs","Maple logs","Magic logs");
+		}
+		return random(1000,2000);
+	}
+
+	public void hoverOverRandomObject()
+	{
+		long time = System.currentTimeMillis();
+		
+		if(time - lastHoverTime > hoverOverRandomObjectTimeout )
+		{
+			
+			List<GroundItem> g = groundItems.getAll();
+			if(g.size() >= 0)
+			{
+				GroundItem gPick = g.get(random(0,g.size()-1));
+				if(gPick != null)
+				{
+					if(players.myPosition().distance(gPick.getPosition()) < 5)
+					{
+						if(random(1,60) <= 25)
+						{
+							camera.toEntity(gPick);
+						}
+						lastHoverTime = time;
+						if(random(0,100) < 5)
+							gPick.examine();
+						else
+							gPick.hover();
+						doSleep(50,20);
+						mouse.click(true);
+						doSleep(1200,400);
+						mouse.moveRandomly();
+					}
+				}
+			}
+			
+		}
+	}
+	
+	public void doSleep(int ms, int randomizer)
+	{
+		if(randomizer > ms)
+		{
+			try 
+			{
+				sleep(ms);
+			} 
+			catch (InterruptedException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		ms = random(ms - randomizer, ms + randomizer);
+		try 
+		{
+			sleep(ms);
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void onPaint(Graphics2D g) 
+	{
+		g.drawString(Activity,12,316);
+	}
+}
