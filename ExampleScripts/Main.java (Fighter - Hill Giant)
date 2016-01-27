@@ -1,0 +1,155 @@
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JOptionPane;
+
+import org.osbot.rs07.api.Bank;
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.map.constants.Banks;
+import org.osbot.rs07.api.model.Item;
+import org.osbot.rs07.api.model.Player;
+import org.osbot.rs07.api.model.RS2Object;
+import org.osbot.rs07.api.ui.EquipmentSlot;
+import org.osbot.rs07.api.ui.RS2Widget;
+import org.osbot.rs07.api.ui.Spells;
+import org.osbot.rs07.api.ui.Tab;
+import org.osbot.rs07.script.Script;
+import org.osbot.rs07.script.ScriptManifest;
+
+@ScriptManifest(name = "AIOFighter", author = "Marc", version = 1.0, info = "", logo = "")
+
+public class Main extends Script 
+{
+	Fighter fighter = new Fighter(this);
+	ItemGrabber itemGrabber = new ItemGrabber(this);
+	Banking banking = new Banking(this);
+	
+	String Activity;
+	String[] Enemies = {"Hill Giant"};
+	
+	public void onStart() 
+	{
+		
+		fighter.setEnemies(Enemies);
+		fighter.unpauseFighter();
+		
+		List<String> items = new ArrayList<String>();
+		
+		items.add("Coins");
+		items.add("Big bones");
+		items.add("Air rune");
+		items.add("Earth rune");
+		items.add("Fire rune");
+		items.add("Staff");
+		items.add("Body rune");
+		items.add("Mind rune");
+		items.add("Fire rune");
+		items.add("Water rune");
+		items.add("Chaos rune");
+		items.add("Nature rune");
+		items.add("Law rune");
+		items.add("Blood rune");
+		items.add("Blue wizard hat");
+		
+		List<String> ignore = new ArrayList<String>();
+		ignore.add("Bones");
+		ignore.add("Logs");
+		ignore.add("Oak logs");
+		
+		itemGrabber.ignore(ignore);
+		itemGrabber.grabAlways(items);
+		itemGrabber.grabIfPriceIsHigherThan(1000);
+		itemGrabber.setIsStackable("Coins");
+		itemGrabber.setIsStackable("Nature rune");
+	}
+
+	public void onExit() 
+	{
+		//System.gc();
+	}
+
+	public int onLoop() 
+	{
+		if(fighter.isFighterPaused())
+		{
+			doSleep(1000,300);
+			log("Fighter is paused");
+			while(players.myPlayer().isMoving())
+			{
+				doSleep(1000,100);
+			}
+			doSleep(500,100);
+			if(players.myPlayer().isAnimating() || players.myPlayer().isUnderAttack())
+			{
+				log("Random antiban");
+				if(random(1,20) < 3)
+					mouse.moveSlightly();
+				if(random(1,20) < 3)
+					mouse.moveRandomly();
+				if(random(1,20) < 5)
+					fighter.hoverOverRandomNPC();
+				if(random(1,20) < 10)
+					fighter.hoverOverRandomObject();
+				if(random(1,20) < 15)
+				{
+					fighter.checkTrainingStat();
+				}
+			}
+			else
+			{
+				itemGrabber.scanFloor();
+				fighter.unpauseFighter();
+			}
+		}
+		else
+		{
+			log("Fighter is NOT paused");
+			boolean success = fighter.attackEnemies();
+			doSleep(200,500);
+			while(players.myPlayer().isMoving())
+			{
+				doSleep(1000,100);
+			}
+			if(success)
+			{
+				fighter.pauseFighter();
+			}
+			else
+			{
+			
+			}
+		}
+		return random(100,200);
+	}
+
+	public void doSleep(int ms, int randomizer)
+	{
+		if(randomizer > ms)
+		{
+			try 
+			{
+				sleep(ms);
+			} 
+			catch (InterruptedException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		ms = random(ms - randomizer, ms + randomizer);
+		try 
+		{
+			sleep(ms);
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void onPaint(Graphics2D g) 
+	{
+		g.drawString(Activity,12,316);
+	}
+}
